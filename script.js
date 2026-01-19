@@ -2,9 +2,12 @@
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
 
+
 // screen properties
-const WIDTH = 640, HALF_WIDTH = WIDTH / 2;
-const HEIGHT = 400, HALF_HEIGHT = HEIGHT / 2;
+const WIDTH = 300;
+const HEIGHT = 200;
+canvas.width = WIDTH;
+canvas.height = HEIGHT;
 
 // fps information
 const FPS = 30;
@@ -12,7 +15,7 @@ const interval = Math.floor(1000 / FPS);
 
 // map properties
 const MAP_SIZE = 16;
-const MAP_SCALE = 10;
+const MAP_SCALE = 64;
 const MAP_RANGE = MAP_SCALE * MAP_SIZE;
 const MAP_SPEED =  (MAP_SCALE / 2) / 5;
 var map = [
@@ -33,8 +36,8 @@ var map = [
     1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
 ];
-var mapOffsetX;
-var mapOffsetY;
+var mapOffsetX, mapOffsetY;
+var showMap = false;
 
 // player properties
 var playerX = MAP_SCALE + 20;
@@ -90,9 +93,8 @@ const STEP_ANGLE = FOV / WIDTH;
 function updateLoop() {
     drawCanvas();
     updatePlayerPosition();
-    drawMap();
-    drawPlayer();
     raycast();
+    drawMap();
 
     // update each interval
     setTimeout(updateLoop, interval);
@@ -100,18 +102,17 @@ function updateLoop() {
 window.onload = () => { updateLoop(); }
 
 function drawCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    ctx.fillStyle = "white";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "black";
-    ctx.fillRect(canvas.width / 2 - HALF_WIDTH, canvas.height / 2 - HALF_HEIGHT, WIDTH, HEIGHT);
+    ctx.fillStyle = "grey";
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
 }
 
 function drawMap() {
     mapOffsetX = Math.floor(canvas.width / 2 - MAP_RANGE / 2);
     mapOffsetY = Math.floor(canvas.height / 2 - MAP_RANGE / 2);
+
+    if(showMap == false) return;
+
+    drawPlayer();
 
     for(row = 0; row < MAP_SIZE; row++) {
         for(col = 0; col < MAP_SIZE; col++) {
@@ -149,6 +150,7 @@ function drawPlayer() {
     ctx.fillStyle = "red";
     ctx.beginPath();
     ctx.arc(playerMapX, playerMapY, 3, 0, 2 * DOUBLE_PI);
+    ctx.fill();
 }
 
 // I basically don't actually know how this works
@@ -208,10 +210,16 @@ function raycast() {
         ctx.lineTo(endX + mapOffsetX, endY + mapOffsetY);
         ctx.stroke(); */
 
-        // Render 3D projection
-
-
+        render3DProjection(ray, verticalDepth, horizontalDepth, currentAngle);
 
         currentAngle -= STEP_ANGLE;
     }
+}
+
+function render3DProjection(ray, verticalDepth, horizontalDepth, currentAngle) {
+    var depth = verticalDepth < horizontalDepth ? verticalDepth : horizontalDepth;
+    depth *= Math.cos(playerAngle - currentAngle);
+    var wallHeight = Math.min(MAP_SCALE * 300 / (depth + 0.0001), HEIGHT)
+    ctx.fillStyle = verticalDepth < horizontalDepth?'red':'#5e1515';
+    ctx.fillRect(ray, (HEIGHT) / 2 - (wallHeight) / 2, 1, wallHeight)
 }
