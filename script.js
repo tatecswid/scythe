@@ -2,224 +2,97 @@
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
 
-
-// screen properties
-const WIDTH = 300;
-const HEIGHT = 200;
-canvas.width = WIDTH;
-canvas.height = HEIGHT;
-
-// fps information
-const FPS = 30;
-const interval = Math.floor(1000 / FPS);
+// FPS
+let FPS = 30;
+let interval = 1000 / FPS;
 
 // map properties
-const MAP_SIZE = 16;
-const MAP_SCALE = 64;
-const MAP_RANGE = MAP_SCALE * MAP_SIZE;
-const MAP_SPEED =  (MAP_SCALE / 2) / 5;
-var map = [
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
-    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+const MAP_WIDTH = 16;
+const MAP_HEIGHT = 16;
+const SCREEN_WIDTH = 300;
+const SCREEN_HEIGHT = 200;
+const WORLD_MAP = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
-var mapOffsetX, mapOffsetY;
-var showMap = false;
 
 // player properties
-var playerX = MAP_SCALE + 20;
-var playerY = MAP_SCALE + 20;
-var playerMapX, playerMapY;
-var playerAngle = Math.PI / 3;
-var playerMoveX = 0, playerMoveY = 0;
-var playerMoveAngle = 0;
-var playerOffsetX, playerOffsetY;
+let posX = 22, posY = 12;
+let dirX = -1, dirY = 0;
+let planeX = 0, planeY = 0.66;
 
-// handle user input
-window.addEventListener("keydown", e => {
-    switch(e.key) {
-        case "w":
-            playerMoveX = playerMoveY = 1;
-            break;
-        case "s":
-            playerMoveX = playerMoveY = -1;
-            break;
-        case "a":
-            playerMoveAngle = -1;
-            break;
-        case "d":
-            playerMoveAngle = 1;
-            break;
-    }
-})
+//draw screen:
+ctx.fillStyle = "black";
+ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 
-window.addEventListener("keyup", e => {
-    switch(e.key) {
-        case "w":
-            playerMoveX = playerMoveY = 0;
-            break;
-        case "s":
-            playerMoveX = playerMoveY = 0;
-            break;
-        case "a":
-            playerMoveAngle = 0;
-            break;
-        case "d":
-            playerMoveAngle = 0;
-            break;
-    }
-})
+// game loop
+function update() {
 
-// camera properties
-const DOUBLE_PI = Math.PI * 2;
-const FOV = Math.PI / 3;
-const HALF_FOV = FOV / 2;
-const STEP_ANGLE = FOV / WIDTH;
+    for(let x = 0; x < SCREEN_WIDTH; x++) {
+        let cameraX = 2 * x / SCREEN_WIDTH - 1;
+        let rayDirX = dirX + planeX * cameraX;
+        let rayDirY = dirY + planeY * cameraX;
 
-// main update loop
-function updateLoop() {
-    drawCanvas();
-    updatePlayerPosition();
-    raycast();
-    drawMap();
+        let mapX = parseInt(posX);
+        let mapY = parseInt(posY);
 
-    // update each interval
-    setTimeout(updateLoop, interval);
-}
-window.onload = () => { updateLoop(); }
+        let sideDistX, sideDistY;
+        
+        let deltaDistX = Math.abs(1 / rayDirX);
+        let deltaDistY = Math.abs(1 / rayDirY);
+        let perpWallDist;
 
-function drawCanvas() {
-    ctx.fillStyle = "grey";
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-}
+        let stepX;
+        let stepY;
 
-function drawMap() {
-    mapOffsetX = Math.floor(canvas.width / 2 - MAP_RANGE / 2);
-    mapOffsetY = Math.floor(canvas.height / 2 - MAP_RANGE / 2);
+        let hit = 0;
+        let side;
 
-    if(showMap == false) return;
+        if(rayDirX < 0) {
+            stepX = -1;
+            sideDistX = (posX - mapX) * deltaDistX;
+        }
+        else {
+            stepX = 1
+            sideDistX = (mapX + 1.0 - posX) * deltaDistX;
+        }
+        if(rayDirY < 0) {
+            stepX = -1;
+            sideDistY = (posY - mapY) * deltaDistY;
+        }
+        else {
+            stepX = 1
+            sideDistY = (mapY + 1.0 - posY) * deltaDistY;
+        }
 
-    drawPlayer();
-
-    for(row = 0; row < MAP_SIZE; row++) {
-        for(col = 0; col < MAP_SIZE; col++) {
-            var sqaure = row * MAP_SIZE + col;
-            if(map[sqaure] == 1) {
-                ctx.fillStyle = "grey";
-
+        while (hit == 0) {
+            if(sideDistX < sideDistY) {
+                sideDistX += deltaDistX;
+                mapX += stepX;
+                side = 0;
             }
             else {
-                ctx.fillStyle = "#afa";
-                
+                sideDistY += deltaDistY;
+                mapY += stepY;
             }
-            ctx.fillRect(mapOffsetX + col * MAP_SCALE, mapOffsetY + row * MAP_SCALE, MAP_SCALE, MAP_SCALE);
         }
     }
+    
+
+    setTimeout(update, interval)
 }
-
-function updatePlayerPosition() {
-    playerOffsetX = Math.sin(playerAngle) * MAP_SPEED;
-    playerOffsetY = Math.cos(playerAngle) * MAP_SPEED;
-
-    // checking colision: (making the "2d" array "1d")
-    var mapTargetX = Math.floor(playerY / MAP_SCALE) * MAP_SIZE + Math.floor((playerX + playerOffsetX) / MAP_SCALE);
-    var mapTargetY = Math.floor((playerY + playerOffsetY * playerMoveY) / MAP_SCALE) * MAP_SIZE + Math.floor(playerX / MAP_SCALE);
-
-    if(playerMoveX != 0 && map[mapTargetX] == 0) { playerX += playerOffsetX * playerMoveX }
-    if(playerMoveY != 0 && map[mapTargetY] == 0) { playerY += playerOffsetY * playerMoveY }
-    if(playerMoveAngle != 0) { playerAngle += -playerMoveAngle * 0.1 }
-}
-
-function drawPlayer() {
-    // draw the player
-    playerMapX = playerX + mapOffsetX;
-    playerMapY = playerY + mapOffsetY;
-    ctx.fillStyle = "red";
-    ctx.beginPath();
-    ctx.arc(playerMapX, playerMapY, 3, 0, 2 * DOUBLE_PI);
-    ctx.fill();
-}
-
-// I basically don't actually know how this works
-function raycast() {
-    var currentAngle = playerAngle + HALF_FOV;
-    var rayStartX = Math.floor(playerX / MAP_SCALE) * MAP_SCALE;
-    var rayStartY = Math.floor(playerY / MAP_SCALE) * MAP_SCALE;
-
-    for(var ray = 0; ray < WIDTH; ray++) {
-        var currentSin = Math.sin(currentAngle); currentSin = currentSin ? currentSin : 0.000001;
-        var currentCos = Math.cos(currentAngle); currentCos = currentCos ? currentCos : 0.000001;
-
-        // intersecting vertical lines
-        var rayEndX, rayEndY, rayDirectionX, verticalDepth;
-        if(currentSin > 0) { rayEndX = rayStartX + MAP_SCALE; rayDirectionX = 1; }
-        else { rayEndX = rayStartX; rayDirectionX = -1 }
-
-        for(var offset = 0; offset < MAP_RANGE; offset += MAP_SCALE) {
-            verticalDepth = (rayEndX - playerX) / currentSin;
-            rayEndY = playerY + verticalDepth * currentCos;
-            var mapTargetX = Math.floor(rayEndX / MAP_SCALE);
-            var mapTargetY = Math.floor(rayEndY / MAP_SCALE);
-            if(currentSin <= 0) mapTargetX += rayDirectionX;
-            var targetSquare = mapTargetY * MAP_SIZE + mapTargetX;
-            if(targetSquare < 0 || targetSquare > map.length - 1) break;
-            if(map[targetSquare] != 0) break;
-            rayEndX += rayDirectionX * MAP_SCALE;
-        }
-        var tempX = rayEndX, tempY = rayEndY;
-
-        // intersecting horizontal lines
-        var rayEndY, rayEndX, rayDirectionY, horizontalDepth;
-        if(currentCos > 0) { rayEndY = rayStartY + MAP_SCALE; rayDirectionY = 1; }
-        else { rayEndY = rayStartY; rayDirectionY = -1 }
-
-        for(var offset = 0; offset < MAP_RANGE; offset += MAP_SCALE) {
-            horizontalDepth = (rayEndY - playerY) / currentCos;
-            rayEndX = playerX + horizontalDepth * currentSin;
-            var mapTargetX = Math.floor(rayEndX / MAP_SCALE);
-            var mapTargetY = Math.floor(rayEndY / MAP_SCALE);
-            if(currentCos <= 0) mapTargetY += rayDirectionY;
-            var targetSquare = mapTargetY * MAP_SIZE + mapTargetX;
-            if(targetSquare < 0 || targetSquare > map.length - 1) break;
-            if(map[targetSquare] != 0) break;
-            rayEndY += rayDirectionY * MAP_SCALE;
-        }
-
-        var endX = verticalDepth < horizontalDepth ? tempX : rayEndX;
-        var endY = verticalDepth < horizontalDepth ? tempY : rayEndY;
-
-        /* draw ray
-        ctx.fill();
-        ctx.strokeStyle = "lime";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(playerMapX, playerMapY);
-        ctx.lineTo(endX + mapOffsetX, endY + mapOffsetY);
-        ctx.stroke(); */
-
-        render3DProjection(ray, verticalDepth, horizontalDepth, currentAngle);
-
-        currentAngle -= STEP_ANGLE;
-    }
-}
-
-function render3DProjection(ray, verticalDepth, horizontalDepth, currentAngle) {
-    var depth = verticalDepth < horizontalDepth ? verticalDepth : horizontalDepth;
-    depth *= Math.cos(playerAngle - currentAngle);
-    var wallHeight = Math.min(MAP_SCALE * 300 / (depth + 0.0001), HEIGHT)
-    ctx.fillStyle = verticalDepth < horizontalDepth?'red':'#5e1515';
-    ctx.fillRect(ray, (HEIGHT) / 2 - (wallHeight) / 2, 1, wallHeight)
-}
+window.onload = () => { update(); }
