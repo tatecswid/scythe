@@ -161,7 +161,6 @@ function raycast() {
         var currentSin = Math.sin(currentAngle); currentSin = currentSin ? currentSin : 0.000001;
         var currentCos = Math.cos(currentAngle); currentCos = currentCos ? currentCos : 0.000001;
 
-
         // intersecting vertical lines
         var rayEndX, rayEndY, rayDirectionX, verticalDepth;
         if(currentSin > 0) { rayEndX = rayStartX + MAP_SCALE; rayDirectionX = 1; }
