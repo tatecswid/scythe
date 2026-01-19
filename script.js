@@ -13,8 +13,8 @@ const SCREEN_WIDTH = 300;
 const SCREEN_HEIGHT = 200;
 const WORLD_MAP = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
@@ -31,17 +31,77 @@ const WORLD_MAP = [
 ];
 
 // player properties
-let posX = 22, posY = 12;
+let posX = 9.7, posY = 5;
 let dirX = -1, dirY = 0;
 let planeX = 0, planeY = 0.66;
+let moveSpeed = 0.1;
+let rotSpeed = 0.03;
 
-//draw screen:
-ctx.fillStyle = "black";
-ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+const controls = {
+    w : false,
+    a : false,
+    s : false,
+    d : false,
+}
+
+// camera properties
+const CAMERA_HEIGHT = 0.8;
+const CAMERA_OFFSET = 20;
+
+window.addEventListener("keydown", (e) => {
+    if(e.key in controls) { controls[e.key] = true }    
+});
+
+window.addEventListener("keyup", (e) => {
+    if(e.key in controls) { controls[e.key] = false }    
+});
+
 
 // game loop
 function update() {
+    drawScreen();
+    updatePlayer();
+    raycast();
 
+    setTimeout(update, interval)
+}
+window.onload = () => { update(); }
+
+function drawScreen() {
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+}
+
+function updatePlayer() {
+    let oldDirX, oldPlaneX;
+    
+    if(controls.w) {
+        if(WORLD_MAP[Math.floor(posX+dirX*moveSpeed)][Math.floor(posY)] == 0) posX += dirX * moveSpeed;
+        if(WORLD_MAP[Math.floor(posX)][Math.floor(posY + dirY * moveSpeed)] == 0) posY += dirY * moveSpeed;
+    }
+    if(controls.s) {
+        if(WORLD_MAP[Math.floor(posX-dirX*moveSpeed)][Math.floor(posY)] == 0) posX -= dirX * moveSpeed;
+        if(WORLD_MAP[Math.floor(posX)][Math.floor(posY - dirY * moveSpeed)] == 0) posY -= dirY * moveSpeed;
+    }
+    if(controls.d) {
+        oldDirX = dirX;
+        dirX = dirX * Math.cos(-rotSpeed) - dirY * Math.sin(-rotSpeed);
+        dirY = oldDirX * Math.sin(-rotSpeed) + dirY * Math.cos(-rotSpeed);
+        oldPlaneX = planeX;
+        planeX = planeX * Math.cos(-rotSpeed) - planeY * Math.sin(-rotSpeed);
+        planeY = oldPlaneX * Math.sin(-rotSpeed) + planeY * Math.cos(-rotSpeed);
+    }
+    if(controls.a) {
+        oldDirX = dirX;
+        dirX = dirX * Math.cos(rotSpeed) - dirY * Math.sin(rotSpeed);
+        dirY = oldDirX * Math.sin(rotSpeed) + dirY * Math.cos(rotSpeed);
+        oldPlaneX = planeX;
+        planeX = planeX * Math.cos(rotSpeed) - planeY * Math.sin(rotSpeed);
+        planeY = oldPlaneX * Math.sin(rotSpeed) + planeY * Math.cos(rotSpeed);
+    }
+}
+
+function raycast() {
     for(let x = 0; x < SCREEN_WIDTH; x++) {
         let cameraX = 2 * x / SCREEN_WIDTH - 1;
         let rayDirX = dirX + planeX * cameraX;
@@ -71,11 +131,11 @@ function update() {
             sideDistX = (mapX + 1.0 - posX) * deltaDistX;
         }
         if(rayDirY < 0) {
-            stepX = -1;
+            stepY = -1;
             sideDistY = (posY - mapY) * deltaDistY;
         }
         else {
-            stepX = 1
+            stepY = 1
             sideDistY = (mapY + 1.0 - posY) * deltaDistY;
         }
 
@@ -88,11 +148,35 @@ function update() {
             else {
                 sideDistY += deltaDistY;
                 mapY += stepY;
+                side = 1;
             }
+            if(WORLD_MAP[mapX][mapY] > 0) hit = 1;
         }
-    }
-    
 
-    setTimeout(update, interval)
+        perpWallDist = (side == 0)? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
+
+        let lineHeight = Math.floor(SCREEN_HEIGHT / perpWallDist)
+
+        let drawStart = -lineHeight * CAMERA_HEIGHT + SCREEN_HEIGHT / 2 - CAMERA_OFFSET;
+        if(drawStart < 0) drawStart = 0;
+        let drawEnd = lineHeight * CAMERA_HEIGHT + SCREEN_HEIGHT / 2 - CAMERA_OFFSET;
+        if(drawEnd >= SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT - 1;
+
+        let color = 'white';
+
+        switch(WORLD_MAP[mapX][mapY]) {
+            case 1:
+                color = 'red';
+                break;
+            case 2:
+                color = 'green';
+                break;
+            case 3:
+                color = 'yellow';
+                break;
+        }
+
+        ctx.fillStyle = color;
+        ctx.fillRect(x, drawStart, 1, drawEnd-drawStart)
+    }
 }
-window.onload = () => { update(); }
