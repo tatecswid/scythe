@@ -33,7 +33,7 @@ const WORLD_MAP = [
 // player properties
 let posX = 9.7, posY = 5;
 let dirX = -1, dirY = 0;
-let planeX = 0, planeY = 0.66;
+let planeX = 0, planeY = 0.50;
 let moveSpeed = 0.1;
 let rotSpeed = 0.03;
 
@@ -48,13 +48,10 @@ const controls = {
 const CAMERA_HEIGHT = 0.8;
 const CAMERA_OFFSET = 20;
 
-window.addEventListener("keydown", (e) => {
-    if(e.key in controls) { controls[e.key] = true }    
-});
+// player controls
+window.addEventListener("keydown", (e) => { if(e.key in controls) { controls[e.key] = true } });
 
-window.addEventListener("keyup", (e) => {
-    if(e.key in controls) { controls[e.key] = false }    
-});
+window.addEventListener("keyup", (e) => { if(e.key in controls) { controls[e.key] = false } });
 
 
 // game loop
@@ -67,9 +64,15 @@ function update() {
 }
 window.onload = () => { update(); }
 
+var img = new Image(64,64);
+img.src = "background.png"
+
 function drawScreen() {
+    ctx.drawImage(img, 0,0,SCREEN_WIDTH,SCREEN_HEIGHT)
+    /*
     ctx.fillStyle = "black";
     ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+    */
 }
 
 function updatePlayer() {
@@ -172,10 +175,11 @@ function raycast() {
                 color = 'green';
                 break;
             case 3:
-                color = 'yellow';
+                color = 'grey';
                 break;
         }
 
+        if(side == 1) color = 'dark' + color
         ctx.fillStyle = color;
         ctx.fillRect(x, drawStart, 1, drawEnd-drawStart)
     }

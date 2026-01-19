@@ -10,7 +10,7 @@ body {
 }
 
 canvas {
-    width: 800px;
+    width: 900px;
     height: 600px;
 
     image-rendering: pixelated;
