@@ -2,6 +2,10 @@
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
 
+// screen properties
+const SCREEN_WIDTH = 300;
+const SCREEN_HEIGHT = 200;
+const buffer = new Uint32Array(SCREEN_WIDTH * SCREEN_HEIGHT);
 
 // FPS
 let FPS = 30;
@@ -10,25 +14,24 @@ let interval = 1000 / FPS;
 // map properties
 const MAP_WIDTH = 16;
 const MAP_HEIGHT = 16;
-const SCREEN_WIDTH = 300;
-const SCREEN_HEIGHT = 200;
+
 const WORLD_MAP = [
-    [1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 1],
-    [1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 3, 2, 0, 0, 0, 0, 0, 1],
-    [3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
 canvas.width = SCREEN_WIDTH;
@@ -52,27 +55,43 @@ window.addEventListener("keydown", (e) => { if(e.key in controls) { controls[e.k
 window.addEventListener("keyup", (e) => { if(e.key in controls) { controls[e.key] = false } });
 
 // texturing
+let textureImages = [
+    "wall.png",
+    "5005.png",
+];
 const TEX_WIDTH = 64;
 const TEX_HEIGHT = 64;
-const buffer = new Uint32Array(SCREEN_WIDTH * SCREEN_HEIGHT);
-const texture = [
-        new Uint32Array(TEX_WIDTH * TEX_HEIGHT),
-    ];
-const img = new Image();
-img.src = "wall.png";
-img.onload = () => {
+
+const texture = [];
+
 var tempCanvas = document.getElementById("temp-canvas");
 var tempContext = tempCanvas.getContext("2d");
-tempContext.drawImage(img,0,0);
-for(let textureIndex = 0; textureIndex < texture.length; textureIndex++) {
-    for(let x = 0; x < TEX_WIDTH; x++) {
-        for(let y = 0; y < TEX_HEIGHT; y++) {
-            let pixel = tempContext.getImageData(x,y,1,1).data;
-            texture[textureIndex][TEX_WIDTH * y + x] =  (pixel[0] << 16) + (pixel[1] << 8) + (pixel[2]);
+
+
+
+textureImages.forEach((imageURL, textureIndex) => {
+    texture[textureIndex] = new Uint32Array(TEX_WIDTH * TEX_HEIGHT);
+
+    const img = new Image(TEX_WIDTH, TEX_HEIGHT);
+    img.src = imageURL;
+
+    img.onload = () => {
+        tempContext.clearRect(0, 0, TEX_WIDTH, TEX_HEIGHT);
+        tempContext.drawImage(img, 0, 0, TEX_WIDTH, TEX_HEIGHT)
+
+        const pixels = tempContext.getImageData(0,0,TEX_WIDTH,TEX_HEIGHT).data;
+
+        for (let y = 0; y < TEX_HEIGHT; y++) {
+            for (let x = 0; x < TEX_WIDTH; x++) {
+                const i = (y * TEX_WIDTH + x) * 4;
+                texture[textureIndex][y * TEX_WIDTH + x] =
+                (pixels[i] << 16) |
+                (pixels[i + 1] << 8) |
+                pixels[i + 2];
             }
         }
     }
-}
+});
     
 
 // game loop
@@ -133,8 +152,8 @@ function raycast() {
 
         let sideDistX, sideDistY;
         
-        let deltaDistX = Math.abs(1 / rayDirX);
-        let deltaDistY = Math.abs(1 / rayDirY);
+        let deltaDistX = rayDirX === 0 ? 1e30 : Math.abs(1 / rayDirX);
+        let deltaDistY = rayDirY === 0 ? 1e30 : Math.abs(1 / rayDirY);
         let perpWallDist;
 
         let stepX;
@@ -178,39 +197,42 @@ function raycast() {
 
         let lineHeight = Math.floor(SCREEN_HEIGHT / perpWallDist)
 
-        let drawStart = -lineHeight / 2 + SCREEN_HEIGHT / 2;
+        let drawStart = Math.round(-lineHeight / 2 + SCREEN_HEIGHT / 2);
         if(drawStart < 0) drawStart = 0;
-        let drawEnd = lineHeight / 2 + SCREEN_HEIGHT / 2;
+        let drawEnd = Math.floor(lineHeight / 2 + SCREEN_HEIGHT / 2) - 1;
         if(drawEnd >= SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT;
 
-/*
+
         // textured raycaster
         let texNum = WORLD_MAP[mapX][mapY] - 1;
         let wallX;
-        if(side == 0) wallX = posX + perpWallDist * rayDirY;
-        else wallX = posX + perpWallDist * rayDirX;
-        wallX -= Math.floor((wallX));
+        if (side === 0) {
+            wallX = posY + perpWallDist * rayDirY;
+        } else {
+            wallX = posX + perpWallDist * rayDirX;
+        }
+        wallX -= Math.floor(wallX);
 
-        let texX = parseInt(wallX * parseFloat(TEX_WIDTH))
+        let texX = Math.floor(wallX * parseFloat(TEX_WIDTH))
         if(side == 0 && rayDirX > 0) texX = TEX_WIDTH - texX - 1;
         if(side == 1 && rayDirY < 0) texX = TEX_WIDTH - texX - 1;
 
         let step = 1.0 * TEX_HEIGHT / lineHeight;
         let texPos = (drawStart - SCREEN_HEIGHT / 2 + lineHeight / 2) * step;
-        for(let y = drawStart; y < drawEnd; y++) {
-            let texY = Math.floor(texPos)
+        for(let y = drawStart; y <= drawEnd; y++) {
+            let texY = Math.floor(texPos) & (TEX_HEIGHT - 1);
             if(texY < 0) texY = 0;
             if(texY >= TEX_HEIGHT) texY = TEX_HEIGHT - 1;
 
             texPos += step;
             if (!texture[texNum]) continue;
-            let pixel = texture[texNum][TEX_WIDTH * texY + texX];
+            let pixel = texture[texNum][TEX_HEIGHT * texY + texX];
 
-            if(side == 1) pixel = pixel >> 1
+            if(side == 1) pixel = pixel >> 1  & 0x7F7F7F;
             buffer[y * SCREEN_WIDTH + ray] = pixel;
-        } */
+        } 
 
-        // untextured raycaster
+        /* untextured raycaster
         let color = 'white';
 
         switch(WORLD_MAP[mapX][mapY]) {
@@ -228,11 +250,12 @@ function raycast() {
         if(side == 1) color = 'dark' + color
         ctx.fillStyle = color;
         ctx.fillRect(ray, drawStart, 1, drawEnd-drawStart)
-        
+        */
     }
 
-    // drawBuffer();
+    drawBuffer();
 }
+
 
 const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
 const data = imageData.data;
