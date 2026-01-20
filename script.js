@@ -5,6 +5,8 @@ const ctx = canvas.getContext("2d");
 // screen properties
 const SCREEN_WIDTH = 300;
 const SCREEN_HEIGHT = 200;
+canvas.width = SCREEN_WIDTH;
+canvas.height = SCREEN_HEIGHT;
 const buffer = new Uint32Array(SCREEN_WIDTH * SCREEN_HEIGHT);
 
 // FPS
@@ -14,7 +16,6 @@ let interval = 1000 / FPS;
 // map properties
 const MAP_WIDTH = 16;
 const MAP_HEIGHT = 16;
-
 const WORLD_MAP = [
     [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -25,7 +26,7 @@ const WORLD_MAP = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -34,14 +35,11 @@ const WORLD_MAP = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
 
-canvas.width = SCREEN_WIDTH;
-canvas.height = SCREEN_HEIGHT;
-
 // player properties
 let posX = 9.7, posY = 5;
 let dirX = -1, dirY = 0;
 let planeX = 0, planeY = 0.66;
-let moveSpeed = 0.1;
+let moveSpeed = 0.05;
 let rotSpeed = 0.03;
 
 // player controls
@@ -67,8 +65,6 @@ const texture = [];
 var tempCanvas = document.getElementById("temp-canvas");
 var tempContext = tempCanvas.getContext("2d");
 
-
-
 textureImages.forEach((imageURL, textureIndex) => {
     texture[textureIndex] = new Uint32Array(TEX_WIDTH * TEX_HEIGHT);
 
@@ -81,34 +77,21 @@ textureImages.forEach((imageURL, textureIndex) => {
 
         const pixels = tempContext.getImageData(0,0,TEX_WIDTH,TEX_HEIGHT).data;
 
-        for (let y = 0; y < TEX_HEIGHT; y++) {
-            for (let x = 0; x < TEX_WIDTH; x++) {
-                const i = (y * TEX_WIDTH + x) * 4;
-                texture[textureIndex][y * TEX_WIDTH + x] =
-                (pixels[i] << 16) |
-                (pixels[i + 1] << 8) |
-                pixels[i + 2];
-            }
-        }
+        for(let rgbaIndex = 0; rgbaIndex < pixels.length; rgbaIndex+=4) {
+            texture[textureIndex][rgbaIndex/4] = pixels[rgbaIndex] << 16 | pixels[rgbaIndex + 1] << 8 | pixels[rgbaIndex + 2];
+        }        
     }
 });
     
 
 // game loop
 function update() {
-
-    drawScreen();
     updatePlayer();
     raycast();
 
     setTimeout(update, interval)
 }
 window.onload = () => { update(); }
-
-function drawScreen() {
-    ctx.fillStyle = "grey";
-    ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-}
 
 function updatePlayer() {
     let oldDirX, oldPlaneX;
@@ -152,8 +135,8 @@ function raycast() {
 
         let sideDistX, sideDistY;
         
-        let deltaDistX = rayDirX === 0 ? 1e30 : Math.abs(1 / rayDirX);
-        let deltaDistY = rayDirY === 0 ? 1e30 : Math.abs(1 / rayDirY);
+        let deltaDistX = Math.abs(1 / rayDirX);
+        let deltaDistY = Math.abs(1 / rayDirY);
         let perpWallDist;
 
         let stepX;
@@ -199,7 +182,7 @@ function raycast() {
 
         let drawStart = Math.round(-lineHeight / 2 + SCREEN_HEIGHT / 2);
         if(drawStart < 0) drawStart = 0;
-        let drawEnd = Math.floor(lineHeight / 2 + SCREEN_HEIGHT / 2) - 1;
+        let drawEnd = Math.round(lineHeight / 2 + SCREEN_HEIGHT / 2) - 1;
         if(drawEnd >= SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT;
 
 
@@ -225,12 +208,11 @@ function raycast() {
             if(texY >= TEX_HEIGHT) texY = TEX_HEIGHT - 1;
 
             texPos += step;
-            if (!texture[texNum]) continue;
             let pixel = texture[texNum][TEX_HEIGHT * texY + texX];
 
-            if(side == 1) pixel = pixel >> 1  & 0x7F7F7F;
+            if(side == 1) pixel = pixel >> 1 & 8355711;
             buffer[y * SCREEN_WIDTH + ray] = pixel;
-        } 
+        }
 
         /* untextured raycaster
         let color = 'white';
