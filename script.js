@@ -41,22 +41,43 @@ let planeX = 0, planeY = 0.66;
 let moveSpeed = 0.1;
 let rotSpeed = 0.03;
 
+// player controls
 const controls = {
     w : false,
     a : false,
     s : false,
     d : false,
 }
-
-
-// player controls
 window.addEventListener("keydown", (e) => { if(e.key in controls) { controls[e.key] = true } });
-
 window.addEventListener("keyup", (e) => { if(e.key in controls) { controls[e.key] = false } });
 
+// texturing
+const TEX_WIDTH = 64;
+const TEX_HEIGHT = 64;
+const buffer = new Uint32Array(SCREEN_WIDTH * SCREEN_HEIGHT);
+const texture = [
+        new Uint32Array(TEX_WIDTH * TEX_HEIGHT),
+    ];
+const img = new Image();
+img.src = "wall.png";
+img.onload = () => {
+var tempCanvas = document.getElementById("temp-canvas");
+var tempContext = tempCanvas.getContext("2d");
+tempContext.drawImage(img,0,0);
+for(let textureIndex = 0; textureIndex < texture.length; textureIndex++) {
+    for(let x = 0; x < TEX_WIDTH; x++) {
+        for(let y = 0; y < TEX_HEIGHT; y++) {
+            let pixel = tempContext.getImageData(x,y,1,1).data;
+            texture[textureIndex][TEX_WIDTH * y + x] =  (pixel[0] << 16) + (pixel[1] << 8) + (pixel[2]);
+            }
+        }
+    }
+}
+    
 
 // game loop
 function update() {
+
     drawScreen();
     updatePlayer();
     raycast();
@@ -64,9 +85,6 @@ function update() {
     setTimeout(update, interval)
 }
 window.onload = () => { update(); }
-
-var img = new Image(64,64);
-img.src = "background.png"
 
 function drawScreen() {
     ctx.fillStyle = "grey";
@@ -103,6 +121,8 @@ function updatePlayer() {
 }
 
 function raycast() {
+    buffer.fill(0);
+
     for(let ray = 0; ray < SCREEN_WIDTH; ray++) {
         let cameraX = 2 * ray / SCREEN_WIDTH - 1;
         let rayDirX = dirX + planeX * cameraX;
@@ -163,6 +183,34 @@ function raycast() {
         let drawEnd = lineHeight / 2 + SCREEN_HEIGHT / 2;
         if(drawEnd >= SCREEN_HEIGHT) drawEnd = SCREEN_HEIGHT;
 
+/*
+        // textured raycaster
+        let texNum = WORLD_MAP[mapX][mapY] - 1;
+        let wallX;
+        if(side == 0) wallX = posX + perpWallDist * rayDirY;
+        else wallX = posX + perpWallDist * rayDirX;
+        wallX -= Math.floor((wallX));
+
+        let texX = parseInt(wallX * parseFloat(TEX_WIDTH))
+        if(side == 0 && rayDirX > 0) texX = TEX_WIDTH - texX - 1;
+        if(side == 1 && rayDirY < 0) texX = TEX_WIDTH - texX - 1;
+
+        let step = 1.0 * TEX_HEIGHT / lineHeight;
+        let texPos = (drawStart - SCREEN_HEIGHT / 2 + lineHeight / 2) * step;
+        for(let y = drawStart; y < drawEnd; y++) {
+            let texY = Math.floor(texPos)
+            if(texY < 0) texY = 0;
+            if(texY >= TEX_HEIGHT) texY = TEX_HEIGHT - 1;
+
+            texPos += step;
+            if (!texture[texNum]) continue;
+            let pixel = texture[texNum][TEX_WIDTH * texY + texX];
+
+            if(side == 1) pixel = pixel >> 1
+            buffer[y * SCREEN_WIDTH + ray] = pixel;
+        } */
+
+        // untextured raycaster
         let color = 'white';
 
         switch(WORLD_MAP[mapX][mapY]) {
@@ -180,5 +228,24 @@ function raycast() {
         if(side == 1) color = 'dark' + color
         ctx.fillStyle = color;
         ctx.fillRect(ray, drawStart, 1, drawEnd-drawStart)
+        
     }
+
+    // drawBuffer();
+}
+
+const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
+const data = imageData.data;
+function drawBuffer() {
+    for (let i = 0; i < buffer.length; i++) {
+        const color = buffer[i];
+
+        const index = i * 4;
+        data[index + 0] = (color >> 16) & 255; // R
+        data[index + 1] = (color >> 8) & 255;  // G
+        data[index + 2] = color & 255;         // B
+        data[index + 3] = 255;                 // A
+    }
+
+    ctx.putImageData(imageData, 0, 0);
 }
