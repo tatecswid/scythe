@@ -8,6 +8,8 @@ const SCREEN_HEIGHT = 200;
 canvas.width = SCREEN_WIDTH;
 canvas.height = SCREEN_HEIGHT;
 const buffer = new Uint32Array(SCREEN_WIDTH * SCREEN_HEIGHT);
+const bufferImgData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
+const imgData = bufferImgData.data;
 
 // FPS
 let FPS = 30;
@@ -17,7 +19,7 @@ let interval = 1000 / FPS;
 const MAP_WIDTH = 16;
 const MAP_HEIGHT = 16;
 const WORLD_MAP = [
-    [1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 1, 1, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
     [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1],
@@ -48,41 +50,28 @@ const controls = {
     a : false,
     s : false,
     d : false,
-}
+};
 window.addEventListener("keydown", (e) => { if(e.key in controls) { controls[e.key] = true } });
 window.addEventListener("keyup", (e) => { if(e.key in controls) { controls[e.key] = false } });
 
 // texturing
 let textureImages = [
-    "wall.png",
-    "5005.png",
+    "textures/wall.png",
+    "textures/brick.png",
+    "textures/floor.png",
+    "textures/ceiling.png",
 ];
 const TEX_WIDTH = 64;
 const TEX_HEIGHT = 64;
-
 const texture = [];
 
-var tempCanvas = document.getElementById("temp-canvas");
-var tempContext = tempCanvas.getContext("2d");
 
-textureImages.forEach((imageURL, textureIndex) => {
-    texture[textureIndex] = new Uint32Array(TEX_WIDTH * TEX_HEIGHT);
 
-    const img = new Image(TEX_WIDTH, TEX_HEIGHT);
-    img.src = imageURL;
-
-    img.onload = () => {
-        tempContext.clearRect(0, 0, TEX_WIDTH, TEX_HEIGHT);
-        tempContext.drawImage(img, 0, 0, TEX_WIDTH, TEX_HEIGHT)
-
-        const pixels = tempContext.getImageData(0,0,TEX_WIDTH,TEX_HEIGHT).data;
-
-        for(let rgbaIndex = 0; rgbaIndex < pixels.length; rgbaIndex+=4) {
-            texture[textureIndex][rgbaIndex/4] = pixels[rgbaIndex] << 16 | pixels[rgbaIndex + 1] << 8 | pixels[rgbaIndex + 2];
-        }        
-    }
-});
-    
+// on start
+function onStart() {
+    textureSetup();
+    update();
+} window.onload = () => onStart();
 
 // game loop
 function update() {
@@ -91,7 +80,28 @@ function update() {
 
     setTimeout(update, interval)
 }
-window.onload = () => { update(); }
+
+function textureSetup() {    
+    var tempCanvas = document.getElementById("temp-canvas");
+    var tempContext = tempCanvas.getContext("2d");
+    textureImages.forEach((imageURL, textureIndex) => {
+        texture[textureIndex] = new Uint32Array(TEX_WIDTH * TEX_HEIGHT);
+
+        const img = new Image(TEX_WIDTH, TEX_HEIGHT);
+        img.src = imageURL;
+
+        img.onload = () => {
+            tempContext.clearRect(0, 0, TEX_WIDTH, TEX_HEIGHT);
+            tempContext.drawImage(img, 0, 0, TEX_WIDTH, TEX_HEIGHT)
+
+            const pixels = tempContext.getImageData(0,0,TEX_WIDTH,TEX_HEIGHT).data;
+
+            for(let rgbaIndex = 0; rgbaIndex < pixels.length; rgbaIndex+=4) {
+                texture[textureIndex][rgbaIndex/4] = pixels[rgbaIndex] << 16 | pixels[rgbaIndex + 1] << 8 | pixels[rgbaIndex + 2];
+            }        
+        }
+    });
+}
 
 function updatePlayer() {
     let oldDirX, oldPlaneX;
@@ -124,7 +134,56 @@ function updatePlayer() {
 
 function raycast() {
     buffer.fill(0);
+    floorCast();
+    wallCast();
+    drawBuffer();
+}
 
+function floorCast() {
+    for(let y = 0; y < SCREEN_HEIGHT; y++) {
+        let rayDirX0 = dirX - planeX;
+        let rayDirY0 = dirY - planeY;
+        let rayDirX1 = dirX + planeX;
+        let rayDirY1 = dirY + planeY;
+
+        let p = y - SCREEN_HEIGHT / 2;
+
+        let posZ = 0.5 * SCREEN_HEIGHT;
+
+        let rowDistance = posZ / p;
+
+        let floorStepX = rowDistance * (rayDirX1 - rayDirX0) / SCREEN_WIDTH;
+        let floorStepY = rowDistance * (rayDirY1 - rayDirY0) / SCREEN_WIDTH;
+
+        let floorX = posX + rowDistance * rayDirX0;
+        let floorY = posY + rowDistance * rayDirY0;
+
+        for(let x = 0; x < SCREEN_WIDTH; ++x) {
+            let cellX = Math.floor(floorX)
+            let cellY = Math.floor(floorY)
+
+            let tx = Math.floor(TEX_WIDTH * (floorX - cellX)) & (TEX_WIDTH - 1);
+            let ty = Math.floor(TEX_HEIGHT * (floorY - cellY)) & (TEX_HEIGHT - 1);
+
+            floorX += floorStepX;
+            floorY += floorStepY;
+
+            let floorTexture = 2;
+            let ceilingTexture = 3;
+            let pixel;
+
+            pixel = texture[floorTexture][TEX_WIDTH * ty + tx];
+            buffer[y * SCREEN_WIDTH + x] = pixel;
+
+            pixel = texture[ceilingTexture][TEX_WIDTH * ty + tx];
+            buffer[(SCREEN_HEIGHT-y-1) * SCREEN_WIDTH + x] = pixel;
+        }
+    }
+
+    
+}
+
+function wallCast() {
     for(let ray = 0; ray < SCREEN_WIDTH; ray++) {
         let cameraX = 2 * ray / SCREEN_WIDTH - 1;
         let rayDirX = dirX + planeX * cameraX;
@@ -178,7 +237,7 @@ function raycast() {
 
         perpWallDist = (side == 0) ? (sideDistX - deltaDistX) : (sideDistY - deltaDistY);
 
-        let lineHeight = Math.floor(SCREEN_HEIGHT / perpWallDist)
+        let lineHeight = Math.floor(SCREEN_HEIGHT / perpWallDist * 1.02);
 
         let drawStart = Math.round(-lineHeight / 2 + SCREEN_HEIGHT / 2);
         if(drawStart < 0) drawStart = 0;
@@ -235,22 +294,18 @@ function raycast() {
         */
     }
 
-    drawBuffer();
 }
 
-
-const imageData = ctx.createImageData(SCREEN_WIDTH, SCREEN_HEIGHT);
-const data = imageData.data;
 function drawBuffer() {
     for (let i = 0; i < buffer.length; i++) {
         const color = buffer[i];
 
         const index = i * 4;
-        data[index + 0] = (color >> 16) & 255; // R
-        data[index + 1] = (color >> 8) & 255;  // G
-        data[index + 2] = color & 255;         // B
-        data[index + 3] = 255;                 // A
+        imgData[index + 0] = (color >> 16) & 255; // R
+        imgData[index + 1] = (color >> 8) & 255;  // G
+        imgData[index + 2] = color & 255;         // B
+        imgData[index + 3] = 255;                 // A
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    ctx.putImageData(bufferImgData, 0, 0);
 }
