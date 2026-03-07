@@ -60,10 +60,30 @@ let textureImages = [
     "textures/brick.png",
     "textures/floor.png",
     "textures/ceiling.png",
+    "textures/bowling_pin.png",
 ];
-const TEX_WIDTH = 64;
-const TEX_HEIGHT = 64;
+const TEX_WIDTH = 128;
+const TEX_HEIGHT = 128;
 const texture = [];
+
+// sprite components:
+class Sprite {
+    constructor(x, y, texture) {
+        this.x = x;
+        this.y = y;
+        this.texture = texture;
+    }
+}
+
+var sprites = [
+    new Sprite(6, 6, 4),
+];
+
+// 1D Buffer
+let ZBuffer = [];
+
+let spriteOrder = [];
+let spriteDistance = [];
 
 
 
@@ -97,12 +117,15 @@ function textureSetup() {
             const pixels = tempContext.getImageData(0,0,TEX_WIDTH,TEX_HEIGHT).data;
 
             for(let rgbaIndex = 0; rgbaIndex < pixels.length; rgbaIndex+=4) {
-                texture[textureIndex][rgbaIndex/4] = pixels[rgbaIndex] << 16 | pixels[rgbaIndex + 1] << 8 | pixels[rgbaIndex + 2];
+                let a = pixels[rgbaIndex + 3];
+                texture[textureIndex][rgbaIndex/4] = a < 128 ? 0 : pixels[rgbaIndex] << 16 | pixels[rgbaIndex + 1] << 8 | pixels[rgbaIndex + 2];
             }        
         }
     });
 }
 
+
+// update player position and rotation, collide with wall
 function updatePlayer() {
     let oldDirX, oldPlaneX;
     
@@ -136,9 +159,11 @@ function raycast() {
     buffer.fill(0);
     floorCast();
     wallCast();
+    spriteCast();
     drawBuffer();
 }
 
+// raycast the floor
 function floorCast() {
     for(let y = 0; y < SCREEN_HEIGHT; y++) {
         let rayDirX0 = dirX - planeX;
@@ -183,6 +208,7 @@ function floorCast() {
     
 }
 
+// raycast the wall
 function wallCast() {
     for(let ray = 0; ray < SCREEN_WIDTH; ray++) {
         let cameraX = 2 * ray / SCREEN_WIDTH - 1;
@@ -292,9 +318,87 @@ function wallCast() {
         ctx.fillStyle = color;
         ctx.fillRect(ray, drawStart, 1, drawEnd-drawStart)
         */
+       ZBuffer[ray] = perpWallDist;
+    }
+}
+
+function spriteCast() {
+    for(let i = 0; i < sprites.length; i++) {
+        spriteOrder[i] = i;
+        spriteDistance[i] = ((posX - sprites[i].x) * (posX - sprites[i].x) + (posY - sprites[i].y) * (posY - sprites[i].y));
+    }
+    sortSprites(spriteOrder, spriteDistance, sprites.length);
+
+    for(let i = 0; i < sprites.length; i++) {
+        //translate sprite position to relative to camera
+        let spriteX = sprites[spriteOrder[i]].x - posX;
+        let spriteY = sprites[spriteOrder[i]].y - posY;
+
+        //transform sprite with the inverse camera matrix
+        // [ planeX   dirX ] -1                                       [ dirY      -dirX ]
+        // [               ]       =  1/(planeX*dirY-dirX*planeY) *   [                 ]
+        // [ planeY   dirY ]                                          [ -planeY  planeX ]
+
+        let invDet = 1.0 / (planeX * dirY - dirX * planeY); //required for correct matrix multiplication
+
+        let transformX = invDet * (dirY * spriteX - dirX * spriteY);
+        let transformY = invDet * (-planeY * spriteX + planeX * spriteY); //this is actually the depth inside the screen, that what Z is in 3D
+
+        let spriteScreenX = Math.floor((SCREEN_WIDTH / 2) * (1 + transformX / transformY));
+
+        //calculate height of the sprite on screen
+        let spriteHeight = Math.abs(Math.floor(SCREEN_HEIGHT / (transformY))); //using 'transformY' instead of the real distance prevents fisheye
+        //calculate lowest and highest pixel to fill in current stripe
+        let drawStartY = Math.floor(-spriteHeight / 2 + SCREEN_HEIGHT / 2);
+        if(drawStartY < 0) drawStartY = 0;
+        let drawEndY = Math.floor(spriteHeight / 2 + SCREEN_HEIGHT / 2);
+        if(drawEndY >= SCREEN_HEIGHT) drawEndY = SCREEN_HEIGHT - 1;
+
+        //calculate width of the sprite
+        let spriteWidth = Math.abs( Math.floor(SCREEN_HEIGHT / (transformY)));
+        let drawStartX = Math.floor(-spriteWidth / 2 + spriteScreenX);
+        if(drawStartX < 0) drawStartX = 0;
+        let drawEndX = Math.floor(spriteWidth / 2 + spriteScreenX);
+        if(drawEndX >= SCREEN_WIDTH) drawEndX = SCREEN_WIDTH - 1;
+
+        for(let stripe = drawStartX-2; stripe <= drawEndX; stripe++) {
+            let texX = Math.floor((stripe - (-spriteWidth / 2 + spriteScreenX)) * TEX_WIDTH / spriteWidth );;
+
+            if (texX < 0) texX = 0;
+            if (texX >= TEX_WIDTH) texX = TEX_WIDTH - 1;
+
+            if(transformY > 0 && stripe >= 0 && stripe < SCREEN_WIDTH && transformY < ZBuffer[stripe]) {
+                for(let y = drawStartY; y <= drawEndY; y++) {
+                    let d = (y) * 256 - SCREEN_HEIGHT * 128 + spriteHeight * 128;
+                    let texY = Math.floor(((d * TEX_HEIGHT) / spriteHeight) / 256);
+                    if (texY < 0) texY = 0;
+                    if (texY >= TEX_HEIGHT) texY = TEX_HEIGHT - 1;
+
+                    let pixel = texture[sprites[spriteOrder[i]].texture][TEX_WIDTH * texY + texX];
+                    
+                    if(pixel > 0) {
+                        buffer[y * SCREEN_WIDTH + stripe] = pixel;
+                    }
+                }
+            }
+        }
+    }
+}
+
+function sortSprites(spriteOrder, spriteDistance, numOfSprites) {
+    let spritesVector = [];
+    for(let i = 0; i < numOfSprites; i++) {
+        spritesVector.push({ spriteDistance: spriteDistance[i], spriteOrder: spriteOrder[i] });
     }
 
+    spritesVector.sort((a,b) => b.spriteDistance - a.spriteDistance);
+
+    for (let i = 0; i < numOfSprites; i++) {
+        spriteDistance[i] = spritesVector[i].spriteDistance;
+        spriteOrder[i] = spritesVector[i].spriteOrder;
+    }
 }
+
 
 function drawBuffer() {
     for (let i = 0; i < buffer.length; i++) {
