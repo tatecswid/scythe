@@ -36,6 +36,43 @@ const WORLD_MAP = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
+const FLOOR_MAP = [
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,6,6,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,6,6,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,6,6,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+];
+
+const CEILING_MAP = [
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+    [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3],
+];
 
 // player properties
 let posX = 9.7, posY = 5;
@@ -60,10 +97,30 @@ let textureImages = [
     "textures/brick.png",
     "textures/floor.png",
     "textures/ceiling.png",
-    "textures/bowling_pin.png",
+
+    // seat sprites
+    "textures/seat_sprite0.png",
+    "textures/seat_sprite315.png",
+    "textures/seat_sprite270.png",
+    "textures/seat_sprite225.png",
+    "textures/seat_sprite180.png",
+    "textures/seat_sprite135.png",
+    "textures/seat_sprite90.png",
+    "textures/seat_sprite45.png",
+    
+    
+    
+    
+    
+    
+
+
+    "textures/bowling_pin.png",    
+    "textures/trash_can.png",
+    "textures/bowling_lane_floor.png",
 ];
-const TEX_WIDTH = 128;
-const TEX_HEIGHT = 128;
+const TEX_WIDTH = 256;
+const TEX_HEIGHT = 256;
 const texture = [];
 
 // sprite components:
@@ -77,6 +134,7 @@ class Sprite {
 
 var sprites = [
     new Sprite(6, 6, 4),
+    new Sprite(6, 8, 4),
 ];
 
 // 1D Buffer
@@ -84,7 +142,6 @@ let ZBuffer = [];
 
 let spriteOrder = [];
 let spriteDistance = [];
-
 
 
 // on start
@@ -101,9 +158,11 @@ function update() {
     setTimeout(update, interval)
 }
 
-function textureSetup() {    
+function textureSetup() {   
+
     var tempCanvas = document.getElementById("temp-canvas");
     var tempContext = tempCanvas.getContext("2d");
+
     textureImages.forEach((imageURL, textureIndex) => {
         texture[textureIndex] = new Uint32Array(TEX_WIDTH * TEX_HEIGHT);
 
@@ -195,6 +254,12 @@ function floorCast() {
 
             let floorTexture = 2;
             let ceilingTexture = 3;
+
+            if(cellX >= 0 && cellX < MAP_WIDTH && cellY >= 0 && cellY < MAP_HEIGHT) {
+                floorTexture = FLOOR_MAP[cellX][cellY];
+                ceilingTexture = CEILING_MAP[cellX][cellY];
+            }
+
             let pixel;
 
             pixel = texture[floorTexture][TEX_WIDTH * ty + tx];
@@ -334,6 +399,7 @@ function spriteCast() {
         let spriteX = sprites[spriteOrder[i]].x - posX;
         let spriteY = sprites[spriteOrder[i]].y - posY;
 
+        
         //transform sprite with the inverse camera matrix
         // [ planeX   dirX ] -1                                       [ dirY      -dirX ]
         // [               ]       =  1/(planeX*dirY-dirX*planeY) *   [                 ]
@@ -361,7 +427,22 @@ function spriteCast() {
         let drawEndX = Math.floor(spriteWidth / 2 + spriteScreenX);
         if(drawEndX >= SCREEN_WIDTH) drawEndX = SCREEN_WIDTH - 1;
 
-        for(let stripe = drawStartX-2; stripe <= drawEndX; stripe++) {
+        let dx = posX - sprites[spriteOrder[i]].x;
+        let dy = posY - sprites[spriteOrder[i]].y;
+
+        // angle from sprite to player
+        let angle = Math.atan2(dy, dx);
+
+        // normalize
+        angle = (angle + Math.PI * 2) % (Math.PI * 2);
+
+        // convert to 8 directions
+        let direction = Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % 8;
+
+        let texIndex = sprites[spriteOrder[i]].texture + direction;
+
+
+        for(let stripe = drawStartX; stripe <= drawEndX; stripe++) {
             let texX = Math.floor((stripe - (-spriteWidth / 2 + spriteScreenX)) * TEX_WIDTH / spriteWidth );;
 
             if (texX < 0) texX = 0;
@@ -374,7 +455,7 @@ function spriteCast() {
                     if (texY < 0) texY = 0;
                     if (texY >= TEX_HEIGHT) texY = TEX_HEIGHT - 1;
 
-                    let pixel = texture[sprites[spriteOrder[i]].texture][TEX_WIDTH * texY + texX];
+                    let pixel = texture[texIndex][TEX_WIDTH * texY + texX];
                     
                     if(pixel > 0) {
                         buffer[y * SCREEN_WIDTH + stripe] = pixel;
