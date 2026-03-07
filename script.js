@@ -139,7 +139,7 @@ var sprites = [
     new Sprite(6, 6, 4),
     new Sprite(6, 8, 4),
     new Sprite(6, 6.5, 12),
-    new Sprite(6, 6.45, 12),
+    new Sprite(6, 6.42, 12),
     new Sprite(6, 6.35, 12),
 ];
 
