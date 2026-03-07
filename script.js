@@ -42,9 +42,9 @@ const FLOOR_MAP = [
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
-    [2,2,2,2,2,2,2,2,6,6,2,2,2,2,2,2],
-    [2,2,2,2,2,2,2,2,6,6,2,2,2,2,2,2],
-    [2,2,2,2,2,2,2,2,6,6,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
+    [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
     [2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2],
@@ -111,10 +111,13 @@ let textureImages = [
     
     
     
-    
-    
-
-
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png",  
     "textures/bowling_pin.png",    
     "textures/trash_can.png",
     "textures/bowling_lane_floor.png",
@@ -135,6 +138,9 @@ class Sprite {
 var sprites = [
     new Sprite(6, 6, 4),
     new Sprite(6, 8, 4),
+    new Sprite(6, 6.5, 12),
+    new Sprite(6, 6.45, 12),
+    new Sprite(6, 6.35, 12),
 ];
 
 // 1D Buffer
