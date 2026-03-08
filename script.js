@@ -98,28 +98,65 @@ let textureImages = [
     "textures/floor.png",
     "textures/ceiling.png",
 
+    
+    
+    
+    
+    
+    
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png",
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png", 
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png",  
+    "textures/bowling_pin.png",
+
     // seat sprites
-    "textures/seat_sprite0.png",
-    "textures/seat_sprite315.png",
-    "textures/seat_sprite270.png",
-    "textures/seat_sprite225.png",
-    "textures/seat_sprite180.png",
-    "textures/seat_sprite135.png",
-    "textures/seat_sprite90.png",
-    "textures/seat_sprite45.png",
-    
-    
-    
-    
-    "textures/bowling_pin.png",  
-    "textures/bowling_pin.png", 
-    "textures/bowling_pin.png",  
-    "textures/bowling_pin.png", 
-    "textures/bowling_pin.png", 
-    "textures/bowling_pin.png",  
-    "textures/bowling_pin.png",  
-    "textures/bowling_pin.png",    
-    "textures/trash_can.png",
+    "textures/seat_0.png",
+    "textures/seat_348.png",
+    "textures/seat_337.png",
+    "textures/seat_326.png",
+    "textures/seat_315.png",
+    "textures/seat_303.png",
+    "textures/seat_292.png",
+    "textures/seat_281.png",
+    "textures/seat_270.png",
+    "textures/seat_258.png",
+    "textures/seat_247.png",
+    "textures/seat_236.png",
+    "textures/seat_225.png",
+    "textures/seat_213.png",
+    "textures/seat_202.png",
+    "textures/seat_191.png",
+    "textures/seat_180.png",
+    "textures/seat_168.png",
+    "textures/seat_157.png",
+    "textures/seat_146.png",
+    "textures/seat_135.png",
+    "textures/seat_123.png",
+    "textures/seat_112.png",
+    "textures/seat_101.png",
+    "textures/seat_90.png",
+    "textures/seat_78.png",
+    "textures/seat_67.png",
+    "textures/seat_56.png",
+    "textures/seat_45.png",
+    "textures/seat_33.png",
+    "textures/seat_22.png",
+    "textures/seat_11.png",
+
+
+
     "textures/bowling_lane_floor.png",
 ];
 const TEX_WIDTH = 256;
@@ -136,11 +173,9 @@ class Sprite {
 }
 
 var sprites = [
-    new Sprite(6, 6, 4),
-    new Sprite(6, 8, 4),
-    new Sprite(6, 6.5, 12),
-    new Sprite(6, 6.42, 12),
-    new Sprite(6, 6.35, 12),
+    
+    new Sprite(5, 5, 20),
+    
 ];
 
 // 1D Buffer
@@ -442,8 +477,8 @@ function spriteCast() {
         // normalize
         angle = (angle + Math.PI * 2) % (Math.PI * 2);
 
-        // convert to 8 directions
-        let direction = Math.floor((angle + Math.PI / 8) / (Math.PI / 4)) % 8;
+        // convert to 16 directions
+        let direction = Math.floor((angle + Math.PI / 32) / (Math.PI / 16)) % 32;
 
         let texIndex = sprites[spriteOrder[i]].texture + direction;
 
